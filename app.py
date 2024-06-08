@@ -65,6 +65,19 @@ def get_product_details(product_id):
         }), 200
     return jsonify({"message": "Product not found"}), 404
 
+@app.route('/api/products', methods=['GET'])
+def get_products():
+    products = Product.query.all()
+    product_list = []
+    for product in products:
+        product_data= {
+            "id": product.id,
+            "name": product.name,
+            "price": product.price,
+            "description": product.description
+        }
+        product_list.append(product_data)
+    return jsonify(product_list)
 
 # Definir uma rota raiz (página inicial) e a função que será executada ao requisitar
 @app.route('/')
