@@ -2,12 +2,16 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from flask_login import UserMixin
+from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret-key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ecommerce.db'
 
+login_manager = LoginManager()
 db = SQLAlchemy(app)
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 CORS(app)
 
 # Modelagem
@@ -25,6 +29,11 @@ class Product(db.Model):
     price = db.Column(db.Float, nullable=False)
     description = db.Column(db.Text, nullable=True)
 
+# Autenticação
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 # Funçao para validar login com usuario e senha
 @app.route('/login', methods=['POST'])
 def login():
@@ -32,11 +41,20 @@ def login():
     user = User.query.filter_by(username=data.get("username")).first()
     print(user)
     if user and user.password == data.get("password"):
+        login_user(user)
         return jsonify({"message": "Login successful"})
     return jsonify({"message": "Invalid credentials"}), 401
 
+# Funçao para deslogar
+@app.route('/logout', methods=['POST'])
+@login_required
+def logout():
+    logout_user()
+    return jsonify({"message": "Logout successful"})
+
 # Funçao para adicionar produtos
 @app.route('/api/products/add', methods=['POST'])
+@login_required
 def add_product():
     data = request.json
     if 'name' in data and 'price' in data:
@@ -48,6 +66,7 @@ def add_product():
 
 # Funçao para deletar produtos pelo Id
 @app.route('/api/products/delete/<int:product_id>', methods=['DELETE'])
+@login_required
 def delete_product(product_id):
     product = Product.query.get(product_id)
     if product:
@@ -58,6 +77,7 @@ def delete_product(product_id):
 
 # Funçao para atualizar produtos pelo Id
 @app.route('/api/products/update/<int:product_id>', methods=['PUT'])
+@login_required
 def update_product(product_id):
     product = Product.query.get(product_id)
     if not product:
