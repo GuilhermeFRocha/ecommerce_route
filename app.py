@@ -1,19 +1,36 @@
 # Importação
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
+from flask_login import UserMixin
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ecommerce.db'
 
 db = SQLAlchemy(app)
+CORS(app)
 
 # Modelagem
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(80), nullable=True)
+
 # Produto (id, name, price, description)venv\Scripts\activate
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     price = db.Column(db.Float, nullable=False)
     description = db.Column(db.Text, nullable=True)
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    user = User.query.filter_by(username=data.get("username")).first()
+    print(user)
+    if user and user.password == data.get("password"):
+        return jsonify({"message": "Login successful"})
+    return jsonify({"message": "Invalid credentials"}), 401
 
 # Funçao para adicionar produtos
 @app.route('/api/products/add', methods=['POST'])
@@ -65,6 +82,7 @@ def get_product_details(product_id):
         }), 200
     return jsonify({"message": "Product not found"}), 404
 
+# Funçao para pegar todos os produtos
 @app.route('/api/products', methods=['GET'])
 def get_products():
     products = Product.query.all()
@@ -73,8 +91,7 @@ def get_products():
         product_data= {
             "id": product.id,
             "name": product.name,
-            "price": product.price,
-            "description": product.description
+            "price": product.price
         }
         product_list.append(product_data)
     return jsonify(product_list)
