@@ -11,6 +11,8 @@ db = SQLAlchemy(app)
 CORS(app)
 
 # Modelagem
+
+# Usuário (id, username, password)
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -23,6 +25,7 @@ class Product(db.Model):
     price = db.Column(db.Float, nullable=False)
     description = db.Column(db.Text, nullable=True)
 
+# Funçao para validar login com usuario e senha
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
